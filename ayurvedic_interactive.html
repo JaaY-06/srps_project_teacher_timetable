@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+<title>Ayurvedic Knowledge Graph — Interactive</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Crimson+Text:ital,wght@0,400;0,600;1,400&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet"/>
+<style>
+  :root {
+    --bg:     #0c0b14;
+    --bg2:    #141222;
+    --bg3:    #1c1930;
+    --green:  #4ade80;
+    --red:    #f87171;
+    --gold:   #fbbf24;
+    --purple: #a78bfa;
+    --blue:   #38bdf8;
+    --text:   #e8dcc8;
+    --muted:  #7a6e5a;
+    --dim:    #2a2440;
+  }
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+  body {
+    font-family: 'Crimson Text', Georgia, serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* ── Header ── */
+  header {
+    padding: 24px 36px 18px;
+    border-bottom: 1px solid #4ade8020;
+    display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px;
+    background: linear-gradient(180deg, #0f0e1a 0%, transparent 100%);
+  }
+  .logo-block .eyebrow {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 4px; color: #4ade8066; margin-bottom: 5px;
+  }
+  .logo-block h1 {
+    font-family: 'Cinzel', serif;
+    font-size: clamp(16px, 2.5vw, 26px);
+    font-weight: 700; color: var(--text);
+  }
+  .logo-block .sub {
+    font-style: italic; font-size: 13px; color: var(--muted); margin-top: 3px;
+  }
+  .header-stats { display: flex; gap: 12px; flex-wrap: wrap; }
+  .hstat {
+    background: var(--bg2); border: 1px solid #4ade8020;
+    border-radius: 4px; padding: 8px 16px; text-align: center;
+  }
+  .hstat .n { font-family: 'Cinzel', serif; font-size: 22px; font-weight: 700; line-height: 1; }
+  .hstat .l { font-family: 'JetBrains Mono', monospace; font-size: 8px; letter-spacing: 2px; color: var(--muted); margin-top: 2px; }
+
+  /* ── Layout ── */
+  .workspace {
+    flex: 1;
+    display: grid;
+    grid-template-columns: 200px 1fr 220px;
+    gap: 0;
+    min-height: 0;
+  }
+  @media (max-width: 900px) {
+    .workspace { grid-template-columns: 1fr; }
+    .side-panel { display: none; }
+  }
+
+  /* ── Side panels ── */
+  .side-panel {
+    border-right: 1px solid #4ade8015;
+    padding: 20px 14px;
+    overflow-y: auto;
+    background: #0e0d1a;
+  }
+  .side-panel.right { border-right: none; border-left: 1px solid #f8717115; background: #0e0d1a; }
+  .panel-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 3px; margin-bottom: 14px; padding-bottom: 8px;
+    border-bottom: 1px solid #ffffff0a;
+  }
+  .node-list-item {
+    display: flex; align-items: center; gap: 8px;
+    padding: 6px 8px; border-radius: 4px; cursor: pointer;
+    transition: background 0.15s; margin-bottom: 2px;
+    font-size: 12px;
+  }
+  .node-list-item:hover { background: #ffffff0a; }
+  .node-list-item.selected { background: #4ade8015; }
+  .node-dot {
+    width: 10px; height: 10px; border-radius: 50%; flex-shrink: 0;
+  }
+  .node-sq {
+    width: 10px; height: 10px; border-radius: 2px; flex-shrink: 0;
+  }
+  .node-name { flex: 1; color: var(--text); }
+  .node-deg {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; color: var(--gold);
+  }
+
+  /* ── SVG canvas ── */
+  .canvas-wrap {
+    position: relative;
+    overflow: hidden;
+    background:
+      radial-gradient(ellipse 55% 45% at 25% 50%, #4ade8007 0%, transparent 65%),
+      radial-gradient(ellipse 55% 45% at 75% 50%, #f871710a 0%, transparent 65%),
+      repeating-linear-gradient(0deg, transparent, transparent 44px, #ffffff02 44px, #ffffff02 45px),
+      repeating-linear-gradient(90deg, transparent, transparent 44px, #ffffff02 44px, #ffffff02 45px);
+  }
+  #graph-svg {
+    width: 100%; height: 100%; display: block;
+    cursor: default;
+  }
+
+  /* ── Info panel (right) ── */
+  .info-box {
+    padding: 18px 14px;
+    font-size: 13px; line-height: 1.65;
+  }
+  .info-empty {
+    color: var(--muted); font-style: italic; font-size: 13px; margin-top: 12px;
+  }
+  .info-name {
+    font-family: 'Cinzel', serif; font-size: 16px; font-weight: 700; margin-bottom: 2px;
+  }
+  .info-latin { font-style: italic; font-size: 12px; color: var(--muted); margin-bottom: 12px; }
+  .info-type {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 3px; margin-bottom: 10px;
+  }
+  .info-row {
+    display: flex; justify-content: space-between; padding: 5px 0;
+    border-bottom: 1px solid #ffffff07; font-size: 12px;
+  }
+  .info-row .k { color: var(--muted); }
+  .info-row .v { font-family: 'JetBrains Mono', monospace; color: var(--text); }
+  .conn-list { margin-top: 12px; }
+  .conn-title {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; color: var(--muted); margin-bottom: 8px;
+  }
+  .conn-tag {
+    display: inline-block; padding: 3px 9px; border-radius: 3px;
+    font-size: 11px; margin: 2px; cursor: pointer; transition: opacity 0.15s;
+  }
+  .conn-tag:hover { opacity: 0.75; }
+
+  /* ── Instruction bar ── */
+  .hint-bar {
+    padding: 8px 36px;
+    background: #0a0912;
+    border-top: 1px solid #4ade8015;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 9px; letter-spacing: 2px; color: #4ade8044;
+    display: flex; gap: 28px; flex-wrap: wrap;
+  }
+  .hint-bar span { display: flex; align-items: center; gap: 6px; }
+
+  /* ── SVG element styles (set via JS) ── */
+  .graph-edge {
+    stroke-width: 1.5;
+    fill: none;
+    transition: stroke 0.18s, stroke-width 0.18s, stroke-opacity 0.18s;
+    pointer-events: none;
+  }
+  .graph-node { cursor: pointer; }
+  .graph-node circle, .graph-node rect {
+    transition: opacity 0.18s, filter 0.18s;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo-block">
+    <div class="eyebrow">GRAPH THEORY · INDIAN KNOWLEDGE SYSTEMS · INTERACTIVE</div>
+    <h1>Ayurvedic Knowledge Graph</h1>
+    <div class="sub">Bipartite Graph  G = (H ∪ D, E) — Click any node to explore</div>
+  </div>
+  <div class="header-stats">
+    <div class="hstat"><div class="n" style="color:#4ade80">12</div><div class="l">HERBS</div></div>
+    <div class="hstat"><div class="n" style="color:#f87171">12</div><div class="l">DISEASES</div></div>
+    <div class="hstat"><div class="n" style="color:#fbbf24">46</div><div class="l">EDGES</div></div>
+    <div class="hstat"><div class="n" style="color:#a78bfa">0.167</div><div class="l">DENSITY</div></div>
+  </div>
+</header>
+
+<div class="workspace">
+
+  <!-- Left: herb list -->
+  <div class="side-panel" id="herb-list-panel">
+    <div class="panel-title" style="color:#4ade80aa">H — HERBS</div>
+    <div id="herb-list"></div>
+  </div>
+
+  <!-- Centre: SVG graph -->
+  <div class="canvas-wrap" id="canvas-wrap">
+    <svg id="graph-svg" viewBox="0 0 800 620" preserveAspectRatio="xMidYMid meet">
+      <defs>
+        <filter id="glow-green" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-red" x="-50%" y="-50%" width="200%" height="200%">
+          <feGaussianBlur stdDeviation="4" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <filter id="glow-gold" x="-60%" y="-60%" width="220%" height="220%">
+          <feGaussianBlur stdDeviation="6" result="blur"/>
+          <feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge>
+        </filter>
+        <!-- Column panel backgrounds -->
+        <linearGradient id="grad-herb" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#4ade8012"/>
+          <stop offset="100%" style="stop-color:#4ade8004"/>
+        </linearGradient>
+        <linearGradient id="grad-dis" x1="0%" y1="0%" x2="100%" y2="0%">
+          <stop offset="0%" style="stop-color:#f8717104"/>
+          <stop offset="100%" style="stop-color:#f8717112"/>
+        </linearGradient>
+      </defs>
+
+      <!-- Column backgrounds -->
+      <rect x="10" y="10" width="195" height="600" rx="8"
+            fill="url(#grad-herb)" stroke="#4ade8025" stroke-width="1"/>
+      <rect x="595" y="10" width="195" height="600" rx="8"
+            fill="url(#grad-dis)" stroke="#f8717125" stroke-width="1"/>
+
+      <!-- Column headers -->
+      <text x="107" y="40" text-anchor="middle" font-family="serif"
+            font-size="13" font-weight="bold" fill="#4ade80cc" letter-spacing="2">H — HERBS</text>
+      <line x1="30" y1="46" x2="184" y2="46" stroke="#4ade8030" stroke-width="1"/>
+
+      <text x="693" y="40" text-anchor="middle" font-family="serif"
+            font-size="13" font-weight="bold" fill="#f87171cc" letter-spacing="2">D — DISEASES</text>
+      <line x1="616" y1="46" x2="770" y2="46" stroke="#f8717130" stroke-width="1"/>
+
+      <!-- Centre label -->
+      <text x="400" y="28" text-anchor="middle" font-family="monospace"
+            font-size="9" fill="#ffffff20" letter-spacing="2">E — EDGES</text>
+      <line x1="400" y1="14" x2="400" y2="606" stroke="#ffffff08"
+            stroke-width="1" stroke-dasharray="5 7"/>
+
+      <!-- Edges group -->
+      <g id="edges-group"></g>
+      <!-- Nodes group -->
+      <g id="nodes-group"></g>
+    </svg>
+  </div>
+
+  <!-- Right: info panel -->
+  <div class="side-panel right">
+    <div class="panel-title" style="color:#38bdf8aa">NODE INFO</div>
+    <div class="info-box" id="info-box">
+      <div class="info-empty">
+        Click any herb or disease node to see its connections, degree, and centrality.
+        <br/><br/>
+        <span style="color:#4ade8066">● circles</span> = Herbs<br/>
+        <span style="color:#f8717166">■ squares</span> = Diseases<br/><br/>
+        Node size reflects its degree.
+      </div>
+    </div>
+    <div class="panel-title" style="color:#38bdf8aa; margin: 0 14px; padding-top:14px; border-top:1px solid #ffffff0a;">D — DISEASES</div>
+    <div id="disease-list" style="padding: 0 14px 14px;"></div>
+  </div>
+
+</div>
+
+<div class="hint-bar">
+  <span>● CLICK node → highlight connections</span>
+  <span>● CLICK again or ESC → deselect</span>
+  <span>● Hover → preview name</span>
+  <span>● Node size = degree</span>
+</div>
+
+<script>
+// ── DATA ──────────────────────────────────────────────────────────────────────
+const HERBS = [
+  { id:"tulsi",       name:"Tulsi",       latin:"Ocimum sanctum",       color:"#4ade80", deg:4 },
+  { id:"ashwagandha", name:"Ashwagandha", latin:"Withania somnifera",   color:"#60a5fa", deg:4 },
+  { id:"turmeric",    name:"Turmeric",    latin:"Curcuma longa",        color:"#fbbf24", deg:5 },
+  { id:"neem",        name:"Neem",        latin:"Azadirachta indica",   color:"#34d399", deg:4 },
+  { id:"ginger",      name:"Ginger",      latin:"Zingiber officinale",  color:"#f97316", deg:4 },
+  { id:"amla",        name:"Amla",        latin:"Phyllanthus emblica",  color:"#a78bfa", deg:5 },
+  { id:"brahmi",      name:"Brahmi",      latin:"Bacopa monnieri",      color:"#38bdf8", deg:3 },
+  { id:"triphala",    name:"Triphala",    latin:"Three-fruit blend",    color:"#fb923c", deg:4 },
+  { id:"giloy",       name:"Giloy",       latin:"Tinospora cordifolia", color:"#86efac", deg:4 },
+  { id:"shatavari",   name:"Shatavari",   latin:"Asparagus racemosus",  color:"#f9a8d4", deg:3 },
+  { id:"haritaki",    name:"Haritaki",    latin:"Terminalia chebula",   color:"#fde68a", deg:3 },
+  { id:"punarnava",   name:"Punarnava",   latin:"Boerhavia diffusa",    color:"#93c5fd", deg:3 },
+];
+
+const DISEASES = [
+  { id:"diabetes",    name:"Diabetes",            color:"#f87171", deg:4 },
+  { id:"inflam",      name:"Inflammation",         color:"#fb923c", deg:2 },
+  { id:"anxiety",     name:"Anxiety & Stress",     color:"#c084fc", deg:4 },
+  { id:"digestive",   name:"Digestive Disorders",  color:"#fbbf24", deg:5 },
+  { id:"immunity",    name:"Low Immunity",          color:"#4ade80", deg:7 },
+  { id:"skin",        name:"Skin Diseases",         color:"#f472b6", deg:4 },
+  { id:"respiratory", name:"Respiratory Issues",    color:"#60a5fa", deg:4 },
+  { id:"liver",       name:"Liver Disorders",       color:"#34d399", deg:6 },
+  { id:"arthritis",   name:"Arthritis",             color:"#a78bfa", deg:3 },
+  { id:"memory",      name:"Memory & Cognition",    color:"#38bdf8", deg:2 },
+  { id:"hyper",       name:"Hypertension",          color:"#fda4af", deg:2 },
+  { id:"anemia",      name:"Anemia",                color:"#e9d5ff", deg:3 },
+];
+
+const EDGES = [
+  ["tulsi","immunity"],["tulsi","respiratory"],["tulsi","anxiety"],["tulsi","skin"],
+  ["ashwagandha","anxiety"],["ashwagandha","memory"],["ashwagandha","immunity"],["ashwagandha","arthritis"],
+  ["turmeric","inflam"],["turmeric","arthritis"],["turmeric","digestive"],["turmeric","skin"],["turmeric","liver"],
+  ["neem","skin"],["neem","diabetes"],["neem","liver"],["neem","immunity"],
+  ["ginger","digestive"],["ginger","inflam"],["ginger","respiratory"],["ginger","arthritis"],
+  ["amla","immunity"],["amla","diabetes"],["amla","anemia"],["amla","digestive"],["amla","skin"],
+  ["brahmi","memory"],["brahmi","anxiety"],["brahmi","hyper"],
+  ["triphala","digestive"],["triphala","diabetes"],["triphala","liver"],["triphala","immunity"],
+  ["giloy","immunity"],["giloy","diabetes"],["giloy","liver"],["giloy","respiratory"],
+  ["shatavari","anemia"],["shatavari","immunity"],["shatavari","anxiety"],
+  ["haritaki","digestive"],["haritaki","respiratory"],["haritaki","liver"],
+  ["punarnava","anemia"],["punarnava","hyper"],["punarnava","liver"],
+];
+
+// ── LAYOUT ───────────────────────────────────────────────────────────────────
+const SVG_W = 800, SVG_H = 620;
+const HERB_X = 107,  DIS_X = 693;
+const TOP_Y  = 62,   BOT_Y = 598;
+
+// Sort by degree descending so high-degree nodes are in the middle
+const herbsSorted = [...HERBS].sort((a,b) => b.deg - a.deg);
+const disSorted   = [...DISEASES].sort((a,b) => b.deg - a.deg);
+
+const herbPos = {}, disPos = {};
+herbsSorted.forEach((h, i) => {
+  herbPos[h.id] = { x: HERB_X, y: TOP_Y + (BOT_Y - TOP_Y) * i / (herbsSorted.length - 1) };
+});
+disSorted.forEach((d, i) => {
+  disPos[d.id] = { x: DIS_X, y: TOP_Y + (BOT_Y - TOP_Y) * i / (disSorted.length - 1) };
+});
+
+// ── BUILD GRAPH SVG ──────────────────────────────────────────────────────────
+const edgesG = document.getElementById('edges-group');
+const nodesG = document.getElementById('nodes-group');
+
+// Draw edges
+EDGES.forEach(([hid, did], i) => {
+  const hp = herbPos[hid], dp = disPos[did];
+  const herb = HERBS.find(h => h.id === hid);
+
+  const path = document.createElementNS("http://www.w3.org/2000/svg", "path");
+  // Cubic bezier — curves through the centre
+  const cx1 = hp.x + (dp.x - hp.x) * 0.42;
+  const cx2 = hp.x + (dp.x - hp.x) * 0.58;
+  path.setAttribute("d", `M ${hp.x} ${hp.y} C ${cx1} ${hp.y}, ${cx2} ${dp.y}, ${dp.x} ${dp.y}`);
+  path.setAttribute("class", "graph-edge");
+  path.setAttribute("stroke", herb.color + "40");
+  path.setAttribute("data-herb", hid);
+  path.setAttribute("data-dis", did);
+  path.setAttribute("id", `edge-${hid}-${did}`);
+  edgesG.appendChild(path);
+});
+
+// Draw nodes
+function nodeRadius(deg) { return 9 + deg * 2.2; }
+
+// Herb nodes
+HERBS.forEach(herb => {
+  const { x, y } = herbPos[herb.id];
+  const r = nodeRadius(herb.deg);
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("class", "graph-node");
+  g.setAttribute("data-id", herb.id);
+  g.setAttribute("data-type", "herb");
+  g.style.cursor = "pointer";
+
+  // Glow ring (hidden by default, shown on select)
+  const ring = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  ring.setAttribute("cx", x); ring.setAttribute("cy", y); ring.setAttribute("r", r + 9);
+  ring.setAttribute("fill", "none");
+  ring.setAttribute("stroke", herb.color);
+  ring.setAttribute("stroke-width", "2");
+  ring.setAttribute("opacity", "0");
+  ring.setAttribute("class", "select-ring");
+  ring.style.transition = "opacity 0.2s";
+  g.appendChild(ring);
+
+  // Main circle
+  const c = document.createElementNS("http://www.w3.org/2000/svg", "circle");
+  c.setAttribute("cx", x); c.setAttribute("cy", y); c.setAttribute("r", r);
+  c.setAttribute("fill", herb.color + "e0");
+  c.setAttribute("stroke", "#ffffff55"); c.setAttribute("stroke-width", "1.2");
+  c.style.transition = "opacity 0.2s";
+  g.appendChild(c);
+
+  // Label (to the left)
+  const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  t.setAttribute("x", x - r - 7); t.setAttribute("y", y + 4);
+  t.setAttribute("text-anchor", "end");
+  t.setAttribute("font-family", "serif");
+  t.setAttribute("font-size", "11");
+  t.setAttribute("font-weight", "bold");
+  t.setAttribute("fill", "#e8dcc8cc");
+  t.style.pointerEvents = "none";
+  t.style.transition = "fill 0.2s";
+  t.textContent = herb.name;
+  t.setAttribute("class", "node-label");
+  g.appendChild(t);
+
+  // Degree badge
+  const deg = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  deg.setAttribute("x", x + r + 5); deg.setAttribute("y", y + 4);
+  deg.setAttribute("font-family", "monospace"); deg.setAttribute("font-size", "9");
+  deg.setAttribute("fill", herb.color + "aa");
+  deg.style.pointerEvents = "none";
+  deg.textContent = `${herb.deg}`;
+  g.appendChild(deg);
+
+  g.addEventListener("click", () => selectNode(herb.id, "herb"));
+  g.addEventListener("mouseenter", () => hoverNode(herb.id, "herb"));
+  g.addEventListener("mouseleave", () => unhover());
+
+  nodesG.appendChild(g);
+});
+
+// Disease nodes
+DISEASES.forEach(dis => {
+  const { x, y } = disPos[dis.id];
+  const r = nodeRadius(dis.deg);
+  const hw = r, hh = r * 0.85;
+
+  const g = document.createElementNS("http://www.w3.org/2000/svg", "g");
+  g.setAttribute("class", "graph-node");
+  g.setAttribute("data-id", dis.id);
+  g.setAttribute("data-type", "disease");
+  g.style.cursor = "pointer";
+
+  // Glow ring
+  const ring = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  ring.setAttribute("x", x - hw - 7); ring.setAttribute("y", y - hh - 7);
+  ring.setAttribute("width", (hw + 7) * 2); ring.setAttribute("height", (hh + 7) * 2);
+  ring.setAttribute("rx", "5");
+  ring.setAttribute("fill", "none");
+  ring.setAttribute("stroke", dis.color);
+  ring.setAttribute("stroke-width", "2");
+  ring.setAttribute("opacity", "0");
+  ring.setAttribute("class", "select-ring");
+  ring.style.transition = "opacity 0.2s";
+  g.appendChild(ring);
+
+  // Main square
+  const sq = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+  sq.setAttribute("x", x - hw); sq.setAttribute("y", y - hh);
+  sq.setAttribute("width", hw * 2); sq.setAttribute("height", hh * 2);
+  sq.setAttribute("rx", "4");
+  sq.setAttribute("fill", dis.color + "e0");
+  sq.setAttribute("stroke", "#ffffff55"); sq.setAttribute("stroke-width", "1.2");
+  sq.style.transition = "opacity 0.2s";
+  g.appendChild(sq);
+
+  // Label (to the right)
+  const t = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  t.setAttribute("x", x + hw + 7); t.setAttribute("y", y + 4);
+  t.setAttribute("text-anchor", "start");
+  t.setAttribute("font-family", "serif");
+  t.setAttribute("font-size", "11");
+  t.setAttribute("font-weight", "bold");
+  t.setAttribute("fill", "#e8dcc8cc");
+  t.style.pointerEvents = "none";
+  t.style.transition = "fill 0.2s";
+  t.textContent = dis.name;
+  t.setAttribute("class", "node-label");
+  g.appendChild(t);
+
+  // Degree badge
+  const deg = document.createElementNS("http://www.w3.org/2000/svg", "text");
+  deg.setAttribute("x", x - hw - 5); deg.setAttribute("y", y + 4);
+  deg.setAttribute("font-family", "monospace"); deg.setAttribute("font-size", "9");
+  deg.setAttribute("text-anchor", "end");
+  deg.setAttribute("fill", dis.color + "aa");
+  deg.style.pointerEvents = "none";
+  deg.textContent = `${dis.deg}`;
+  g.appendChild(deg);
+
+  g.addEventListener("click", () => selectNode(dis.id, "disease"));
+  g.addEventListener("mouseenter", () => hoverNode(dis.id, "disease"));
+  g.addEventListener("mouseleave", () => unhover());
+
+  nodesG.appendChild(g);
+});
+
+// ── INTERACTION STATE ─────────────────────────────────────────────────────────
+let selectedId   = null;
+let selectedType = null;
+
+function getConnectedIds(nodeId, type) {
+  if (type === "herb")    return EDGES.filter(e => e[0] === nodeId).map(e => e[1]);
+  if (type === "disease") return EDGES.filter(e => e[1] === nodeId).map(e => e[0]);
+  return [];
+}
+
+function selectNode(id, type) {
+  if (selectedId === id) {
+    clearSelection(); return;
+  }
+  selectedId   = id;
+  selectedType = type;
+  applySelection(id, type);
+  showInfo(id, type);
+  highlightSideList(id);
+}
+
+function applySelection(id, type) {
+  const connectedIds = getConnectedIds(id, type);
+
+  // Dim ALL edges first
+  document.querySelectorAll('.graph-edge').forEach(e => {
+    e.setAttribute("stroke", "#ffffff08");
+    e.setAttribute("stroke-width", "1");
+  });
+
+  // Dim ALL nodes
+  document.querySelectorAll('.graph-node').forEach(g => {
+    const nodeId = g.getAttribute("data-id");
+    const isSelected  = nodeId === id;
+    const isConnected = connectedIds.includes(nodeId);
+    const shapes = g.querySelectorAll("circle:not(.select-ring), rect:not(.select-ring)");
+    const labels = g.querySelectorAll("text.node-label");
+    const rings  = g.querySelectorAll(".select-ring");
+
+    if (isSelected) {
+      shapes.forEach(s => s.style.opacity = "1");
+      labels.forEach(l => { l.setAttribute("fill", "#ffffff"); l.setAttribute("font-size", "12"); });
+      rings.forEach(r => r.setAttribute("opacity", "0.7"));
+      g.style.filter = "url(#glow-gold)";
+    } else if (isConnected) {
+      shapes.forEach(s => s.style.opacity = "0.95");
+      labels.forEach(l => { l.setAttribute("fill", "#e8dcc8ee"); l.setAttribute("font-size", "11"); });
+      rings.forEach(r => r.setAttribute("opacity", "0"));
+      g.style.filter = "";
+    } else {
+      shapes.forEach(s => s.style.opacity = "0.12");
+      labels.forEach(l => { l.setAttribute("fill", "#ffffff22"); l.setAttribute("font-size", "11"); });
+      rings.forEach(r => r.setAttribute("opacity", "0"));
+      g.style.filter = "";
+    }
+  });
+
+  // Light up connected edges
+  const selectedNode = (type === "herb" ? HERBS : DISEASES).find(n => n.id === id);
+  connectedIds.forEach(cid => {
+    const edgeId = type === "herb"
+      ? `edge-${id}-${cid}`
+      : `edge-${cid}-${id}`;
+    const edge = document.getElementById(edgeId);
+    if (edge) {
+      edge.setAttribute("stroke", selectedNode.color + "cc");
+      edge.setAttribute("stroke-width", "2.5");
+    }
+  });
+}
+
+function clearSelection() {
+  selectedId = null; selectedType = null;
+  // Reset all nodes
+  document.querySelectorAll('.graph-node').forEach(g => {
+    const shapes = g.querySelectorAll("circle:not(.select-ring), rect:not(.select-ring)");
+    const labels = g.querySelectorAll("text.node-label");
+    const rings  = g.querySelectorAll(".select-ring");
+    shapes.forEach(s => s.style.opacity = "1");
+    labels.forEach(l => { l.setAttribute("fill", "#e8dcc8cc"); l.setAttribute("font-size", "11"); });
+    rings.forEach(r => r.setAttribute("opacity", "0"));
+    g.style.filter = "";
+  });
+  // Reset all edges
+  document.querySelectorAll('.graph-edge').forEach(e => {
+    const hid = e.getAttribute("data-herb");
+    const herb = HERBS.find(h => h.id === hid);
+    e.setAttribute("stroke", herb.color + "40");
+    e.setAttribute("stroke-width", "1.5");
+  });
+  // Clear info
+  document.getElementById("info-box").innerHTML =
+    `<div class="info-empty">Click any herb or disease node to see its connections, degree, and centrality.<br/><br/>
+    <span style="color:#4ade8066">● circles</span> = Herbs<br/>
+    <span style="color:#f8717166">■ squares</span> = Diseases<br/><br/>
+    Node size reflects its degree.</div>`;
+  // Clear sidebar highlights
+  document.querySelectorAll('.node-list-item').forEach(el => el.classList.remove("selected"));
+}
+
+function hoverNode(id, type) {
+  if (selectedId) return; // don't interfere with selection
+  const connectedIds = getConnectedIds(id, type);
+  document.querySelectorAll('.graph-edge').forEach(e => {
+    const hid = e.getAttribute("data-herb");
+    const did = e.getAttribute("data-dis");
+    const isConn = (type === "herb" && hid === id) || (type === "disease" && did === id);
+    if (!isConn) e.setAttribute("stroke", "#ffffff06");
+    else {
+      const herb = HERBS.find(h => h.id === hid);
+      e.setAttribute("stroke", herb.color + "99");
+      e.setAttribute("stroke-width", "2");
+    }
+  });
+  document.querySelectorAll('.graph-node').forEach(g => {
+    const nid = g.getAttribute("data-id");
+    const shapes = g.querySelectorAll("circle:not(.select-ring), rect:not(.select-ring)");
+    if (nid === id || connectedIds.includes(nid)) shapes.forEach(s => s.style.opacity = "1");
+    else shapes.forEach(s => s.style.opacity = "0.2");
+  });
+}
+
+function unhover() {
+  if (selectedId) return;
+  clearSelection();
+}
+
+function showInfo(id, type) {
+  const node = (type === "herb" ? HERBS : DISEASES).find(n => n.id === id);
+  const connected = getConnectedIds(id, type);
+  const otherList = type === "herb" ? DISEASES : HERBS;
+  const centrality = (node.deg / 23).toFixed(4);
+
+  const connHtml = connected.map(cid => {
+    const other = otherList.find(n => n.id === cid);
+    return `<span class="conn-tag" style="background:${other.color}22;border:1px solid ${other.color}55;color:${other.color}"
+      onclick="selectNode('${other.id}','${type === 'herb' ? 'disease' : 'herb'}')">${other.name}</span>`;
+  }).join('');
+
+  document.getElementById("info-box").innerHTML = `
+    <div class="info-type" style="color:${node.color}aa">${type === 'herb' ? '● HERB' : '■ DISEASE'}</div>
+    <div class="info-name" style="color:${node.color}">${node.name}</div>
+    ${type === 'herb' ? `<div class="info-latin">${node.latin}</div>` : '<div style="height:12px"></div>'}
+    <div class="info-row"><span class="k">Degree</span><span class="v" style="color:#fbbf24">${node.deg}</span></div>
+    <div class="info-row"><span class="k">Centrality C_D</span><span class="v" style="color:#38bdf8">${centrality}</span></div>
+    <div class="info-row"><span class="k">Partition</span><span class="v">${type === 'herb' ? 'H (herbs)' : 'D (diseases)'}</span></div>
+    <div class="conn-list">
+      <div class="conn-title">${type === 'herb' ? 'TREATS →' : '← TREATED BY'}</div>
+      ${connHtml}
+    </div>`;
+}
+
+function highlightSideList(id) {
+  document.querySelectorAll('.node-list-item').forEach(el => {
+    el.classList.toggle("selected", el.getAttribute("data-id") === id);
+  });
+}
+
+// ── POPULATE SIDE LISTS ───────────────────────────────────────────────────────
+const herbList = document.getElementById("herb-list");
+herbsSorted.forEach(h => {
+  const div = document.createElement("div");
+  div.className = "node-list-item";
+  div.setAttribute("data-id", h.id);
+  div.innerHTML = `<div class="node-dot" style="background:${h.color}"></div>
+    <span class="node-name">${h.name}</span>
+    <span class="node-deg">${h.deg}</span>`;
+  div.onclick = () => selectNode(h.id, "herb");
+  herbList.appendChild(div);
+});
+
+const disList = document.getElementById("disease-list");
+disSorted.forEach(d => {
+  const div = document.createElement("div");
+  div.className = "node-list-item";
+  div.setAttribute("data-id", d.id);
+  div.innerHTML = `<div class="node-sq" style="background:${d.color}"></div>
+    <span class="node-name" style="font-size:11px">${d.name}</span>
+    <span class="node-deg">${d.deg}</span>`;
+  div.onclick = () => selectNode(d.id, "disease");
+  disList.appendChild(div);
+});
+
+// ── KEYBOARD ESCAPE ───────────────────────────────────────────────────────────
+document.addEventListener("keydown", e => { if (e.key === "Escape") clearSelection(); });
+
+// Click background to deselect
+document.getElementById("graph-svg").addEventListener("click", e => {
+  if (e.target.id === "graph-svg" || e.target.tagName === "svg") clearSelection();
+});
+</script>
+</body>
+</html>
