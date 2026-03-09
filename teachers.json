@@ -1,0 +1,107 @@
+{
+  "teachers": [
+    {
+      "id": "T1",
+      "name": "Dr. Sharma",
+      "dept": "Computer",
+      "subjects": [
+        "DBMS",
+        "OS"
+      ],
+      "slot": 2
+    },
+    {
+      "id": "T2",
+      "name": "Prof. Mehta",
+      "dept": "Computer",
+      "subjects": [
+        "CN",
+        "TOC"
+      ],
+      "slot": 3
+    },
+    {
+      "id": "T3",
+      "name": "Dr. Patil",
+      "dept": "Computer",
+      "subjects": [
+        "DS",
+        "Algorithms"
+      ],
+      "slot": 4
+    },
+    {
+      "id": "T4",
+      "name": "Prof. Joshi",
+      "dept": "Commerce",
+      "subjects": [
+        "Accounts",
+        "Tax"
+      ],
+      "slot": 1
+    },
+    {
+      "id": "T5",
+      "name": "Dr. Kulkarni",
+      "dept": "Commerce",
+      "subjects": [
+        "Economics",
+        "Maths"
+      ],
+      "slot": 3
+    },
+    {
+      "id": "T6",
+      "name": "Prof. Desai",
+      "dept": "Commerce",
+      "subjects": [
+        "BM",
+        "HRM"
+      ],
+      "slot": 4
+    },
+    {
+      "id": "T7",
+      "name": "Neha Yeole",
+      "dept": "Computer",
+      "subjects": [
+        "Math"
+      ],
+      "slot": 5
+    },
+    {
+      "id": "T8",
+      "name": "Samadhan Nikam",
+      "dept": "Computer",
+      "subjects": [
+        "Electronics"
+      ],
+      "slot": 1
+    },
+    {
+      "id": "T9",
+      "name": "Tejaswi Jagtap",
+      "dept": "Computer",
+      "subjects": [
+        "Statistics"
+      ],
+      "slot": 1
+    },
+    {
+      "id": "T10",
+      "name": "Samadhan Nikam",
+      "dept": "Commerce",
+      "subjects": [
+        "Electronics"
+      ],
+      "slot": 2
+    }
+  ],
+  "time_slots": {
+    "1": "10:00\u00e2\u20ac\u201c10:50",
+    "2": "10:50\u00e2\u20ac\u201c11:40",
+    "3": "11:40\u00e2\u20ac\u201c12:30",
+    "4": "12:30\u00e2\u20ac\u201c1:20",
+    "5": "1:20\u00e2\u20ac\u201c2:10"
+  }
+}

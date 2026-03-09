@@ -1,0 +1,139 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Timetable Dashboard</title>
+
+  <!-- Google Fonts: Syne (headers) + DM Mono (data) -->
+  <link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;600;700;800&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet"/>
+
+  <!-- D3.js v7 — the visualization library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/d3/7.8.5/d3.min.js"></script>
+
+  <link rel="stylesheet" href="/static/css/style.css"/>
+</head>
+<body>
+
+  <!-- ═══════════════════════════════════════════
+       TOP HEADER BAR
+  ═══════════════════════════════════════════ -->
+  <header class="topbar">
+    <div class="topbar-left">
+      <div class="logo-mark">◈</div>
+      <div>
+        <h1 class="site-title">Timetable<span class="accent">.</span>Graph</h1>
+        <p class="site-sub">Graph-Theory Powered Schedule Optimizer</p>
+      </div>
+    </div>
+    <div class="topbar-right">
+      <div class="stat-pill" id="stat-teachers">
+        <span class="stat-num">–</span>
+        <span class="stat-label">Teachers</span>
+      </div>
+      <div class="stat-pill" id="stat-slots">
+        <span class="stat-num">–</span>
+        <span class="stat-label">Slots Used</span>
+      </div>
+      <div class="stat-pill conflict-pill" id="stat-conflicts">
+        <span class="stat-num">–</span>
+        <span class="stat-label">Conflicts</span>
+      </div>
+    </div>
+  </header>
+
+  <!-- ═══════════════════════════════════════════
+       ACTION TOOLBAR
+  ═══════════════════════════════════════════ -->
+  <div class="toolbar">
+    <button class="btn btn-primary" onclick="autoAssign()">⟳ Auto-Assign (Graph Color)</button>
+    <button class="btn btn-secondary" onclick="openAddTeacherModal()">+ Add Teacher</button>
+    <button class="btn btn-ghost" onclick="resetAll()">↺ Reset All</button>
+
+    <div class="dept-filter">
+      <label>Filter:</label>
+      <button class="filter-btn active" data-dept="All"      onclick="filterDept(this)">All</button>
+      <button class="filter-btn"        data-dept="Computer" onclick="filterDept(this)">Computer</button>
+      <button class="filter-btn"        data-dept="Commerce" onclick="filterDept(this)">Commerce</button>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       MAIN LAYOUT: Grid + Graph side by side
+  ═══════════════════════════════════════════ -->
+  <main class="main-layout">
+
+    <!-- LEFT: Timetable Grid -->
+    <section class="panel panel-grid">
+      <div class="panel-header">
+        <h2>📅 Timetable Grid</h2>
+        <span class="panel-hint">Drag teacher cards to reassign slots</span>
+      </div>
+      <div id="timetable-grid" class="timetable-grid">
+        <!-- Dynamically built by timetable.js -->
+        <div class="loading-spinner">Loading schedule…</div>
+      </div>
+    </section>
+
+    <!-- RIGHT: Conflict Graph -->
+    <section class="panel panel-graph">
+      <div class="panel-header">
+        <h2>🕸 Conflict Graph</h2>
+        <span class="panel-hint">Red edges = active scheduling conflict</span>
+      </div>
+      <div id="conflict-graph">
+        <!-- Rendered by D3 in conflict_graph.js -->
+      </div>
+      <div class="graph-legend">
+        <div class="legend-item"><span class="leg-dot comp"></span> Computer Dept</div>
+        <div class="legend-item"><span class="leg-dot comm"></span> Commerce Dept</div>
+        <div class="legend-item"><span class="leg-line ok"></span> No conflict</div>
+        <div class="legend-item"><span class="leg-line bad"></span> Conflict!</div>
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ═══════════════════════════════════════════
+       CONFLICT ALERT BANNER (hidden by default)
+  ═══════════════════════════════════════════ -->
+  <div id="conflict-banner" class="conflict-banner hidden">
+    <strong>⚠ Scheduling Conflict Detected!</strong>
+    <span id="conflict-detail"></span>
+    <button onclick="autoAssign()">Fix Automatically</button>
+    <button class="close-btn" onclick="hideBanner()">✕</button>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       ADD TEACHER MODAL
+  ═══════════════════════════════════════════ -->
+  <div id="add-modal" class="modal-overlay hidden">
+    <div class="modal">
+      <h3>Add New Teacher</h3>
+      <label>Name</label>
+      <input id="inp-name" type="text" placeholder="Dr. Example" />
+
+      <label>Department</label>
+      <select id="inp-dept">
+        <option value="Computer">Computer</option>
+        <option value="Commerce">Commerce</option>
+      </select>
+
+      <label>Subjects (comma separated)</label>
+      <input id="inp-subjects" type="text" placeholder="e.g. Math, Physics" />
+
+      <div class="modal-actions">
+        <button class="btn btn-primary"   onclick="submitAddTeacher()">Add Teacher</button>
+        <button class="btn btn-ghost"     onclick="closeModal()">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ═══════════════════════════════════════════
+       JAVASCRIPT FILES
+  ═══════════════════════════════════════════ -->
+  <script src="/static/js/timetable.js"></script>
+  <script src="/static/js/conflict_graph.js"></script>
+
+</body>
+</html>
